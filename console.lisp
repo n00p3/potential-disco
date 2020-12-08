@@ -1,11 +1,11 @@
 (defpackage #:NES-console
   (:nicknames #:nes)
-  (:use :cl :6502-cpu :NES-cartridge :NES-ppu :NES-controller)
+  (:use :cl :6502-cpu :NES-cartridge :NES-ppu :NES-controller :utils :alexandria)
   (:export #:make-nes #:console-on #:nes-cpu #:nes-ppu #:nes-cart #:step-nes
            #:step-frame #:setup-and-emulate #:render-nes #:read-rom))
 
 (in-package :NES-console)
-(declaim (optimize (speed 3) (safety 1)))
+;;(declaim (optimize (speed 3) (safety 1)))
 (defstruct nes
   "A model nes"
   (cpu (6502-cpu:make-cpu))
@@ -21,6 +21,8 @@
    20
    :element-type '(unsigned-byte 2)
    :initial-contents '(0 0 1 1 0 1 0 1 0 0 0 0 1 1 1 1 0 1 2 3)))
+
+(defvar *fps* 60)
 
 (defun read-rom (n rom-name)
   (declare (nes n))
@@ -70,9 +72,19 @@
              (b (color-b color))
              (col (logior (ash #xFF 24) (ash r 16) (ash g 8) (ash b 0))))
         (setf (sb-sys:sap-ref-32 pixels (* 4 (+ (* y NES-ppu:screen-width) x))) col))))
-   (sdl2:update-texture tex pixels :rect rect :width pitch)
+   (sdl2:update-texture tex rect pixels pitch)
    (sdl2:unlock-texture tex))
   (sdl2:render-copy renderer tex :dest-rect rect))
+
+(defun step-delta (a)
+  (let ((time-to-sleep))
+    (multiple-value-bind (real-frame-time)
+	(utils:timings (lambda () (step-frame a)))
+      (setf time-to-sleep (- (/ *fps*) real-frame-time))
+      (when (alexandria:positive-real-p time-to-sleep)
+	(sleep time-to-sleep)))))
+
+    
 
 (defun setup-and-emulate (cart-name)
   (let ((a (make-nes)))
@@ -96,7 +108,7 @@
             (:idle
              ()
              ;Update Controller
-             (step-frame a)
+	     (step-delta a)
              (test-render-clear renderer)
              (render-nes (NES-ppu:ppu-front (nes-ppu a)) renderer tex rect)
              (sdl2:render-present renderer))
