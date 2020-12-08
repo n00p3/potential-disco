@@ -37,10 +37,10 @@
 (defun step-nes (n steps)
   (declare (nes n) ((unsigned-byte 32) steps))
   (loop for s from 1 to steps
-    do
-    (let ((cycles (* 3 (the (unsigned-byte 8)(6502-CPU:step-cpu (nes-cpu n))))))
-      (declare ((unsigned-byte 8) cycles))
-      (NES-ppu:step-ppu (nes-ppu n) cycles))))
+        do
+           (let ((cycles (* 3 (the (unsigned-byte 8)(6502-CPU:step-cpu (nes-cpu n))))))
+             (declare ((unsigned-byte 8) cycles))
+             (NES-ppu:step-ppu (nes-ppu n) cycles))))
 
 (defun step-frame (n)
   (declare (nes n))
@@ -49,10 +49,10 @@
     (declare ((unsigned-byte 16) frame))
     (loop
       do
-      (progn
-       (when (not (= frame (NES-ppu:ppu-frame (nes-ppu n)))) (return))
-       (nes-controller:update-controller controller)
-       (step-nes n 1)))))
+         (progn
+           (when (not (= frame (NES-ppu:ppu-frame (nes-ppu n)))) (return))
+           (nes-controller:update-controller controller)
+           (step-nes n 1)))))
 
 (defun test-render-clear (renderer)
   (sdl2:set-render-draw-color renderer 0 0 0 255)
@@ -60,20 +60,20 @@
 
 (defun render-nes (front renderer tex rect)
   (multiple-value-bind
-   (pixels pitch)
-   (sdl2:lock-texture tex rect)
-   (loop for y from 0 to (- NES-ppu:screen-height 1)
-    do
-    (loop for x from 0 to (- NES-ppu:screen-width 1)
-      do
-      (let* ((color (aref (the (simple-array NES-ppu:color 1) front) (+ (* y NES-ppu:screen-width) x)))
-             (r (color-r color))
-             (g (color-g color))
-             (b (color-b color))
-             (col (logior (ash #xFF 24) (ash r 16) (ash g 8) (ash b 0))))
-        (setf (sb-sys:sap-ref-32 pixels (* 4 (+ (* y NES-ppu:screen-width) x))) col))))
-   (sdl2:update-texture tex rect pixels pitch)
-   (sdl2:unlock-texture tex))
+        (pixels pitch)
+      (sdl2:lock-texture tex rect)
+    (loop for y from 0 to (- NES-ppu:screen-height 1)
+          do
+             (loop for x from 0 to (- NES-ppu:screen-width 1)
+                   do
+                      (let* ((color (aref (the (simple-array NES-ppu:color 1) front) (+ (* y NES-ppu:screen-width) x)))
+                             (r (color-r color))
+                             (g (color-g color))
+                             (b (color-b color))
+                             (col (logior (ash #xFF 24) (ash r 16) (ash g 8) (ash b 0))))
+                        (setf (sb-sys:sap-ref-32 pixels (* 4 (+ (* y NES-ppu:screen-width) x))) col))))
+    (sdl2:update-texture tex rect pixels pitch)
+    (sdl2:unlock-texture tex))
   (sdl2:render-copy renderer tex :dest-rect rect))
 
 (defun step-delta (a)
@@ -84,8 +84,6 @@
       (when (alexandria:positive-real-p time-to-sleep)
 	(sleep time-to-sleep)))))
 
-    
-
 (defun setup-and-emulate (cart-name)
   (let ((a (make-nes)))
     (read-rom a cart-name)
@@ -94,22 +92,21 @@
       (sdl2:with-window (win :title "Potential-Disco" :w NES-ppu:screen-width :h NES-ppu:screen-height :flags '(:shown))
         (sdl2:with-renderer (renderer win :flags '(:accelerated))
           (let* ((tex (sdl2:create-texture
-                      renderer
-                      :argb8888
-                      :streaming
-                      NES-ppu:screen-width
-                      NES-ppu:screen-height))
-                (rect (sdl2:make-rect 0 0 NES-ppu:screen-width NES-ppu:screen-height)))
+                       renderer
+                       :argb8888
+                       :streaming
+                       NES-ppu:screen-width
+                       NES-ppu:screen-height))
+                 (rect (sdl2:make-rect 0 0 NES-ppu:screen-width NES-ppu:screen-height)))
             (sdl2:with-event-loop (:method :poll)
-            (:keyup
-             (:keysym keysym)
-             (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-escape)
-               (sdl2:push-event :quit)))
-            (:idle
-             ()
-             ;Update Controller
-	     (step-delta a)
-             (test-render-clear renderer)
-             (render-nes (NES-ppu:ppu-front (nes-ppu a)) renderer tex rect)
-             (sdl2:render-present renderer))
-            (:quit () t))))))))
+              (:keyup
+               (:keysym keysym)
+               (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-escape)
+                 (sdl2:push-event :quit)))
+              (:idle
+               ()
+               (step-delta a)
+               (test-render-clear renderer)
+               (render-nes (NES-ppu:ppu-front (nes-ppu a)) renderer tex rect)
+               (sdl2:render-present renderer))
+              (:quit () t))))))))
