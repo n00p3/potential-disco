@@ -1,7 +1,7 @@
 (in-package #:asdf-user)
 
 (defsystem #:console
-  :depends-on (#:sdl2)
+  :depends-on (#:sdl2 #:alexandria)
   :components ((:file "cpu")
                (:file "console" :depends-on ("cpu" "cartridge" "ppu" "controller"))
                (:file "mmu" :depends-on ("controller" "console"))
