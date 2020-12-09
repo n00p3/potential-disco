@@ -3,7 +3,8 @@
 (defsystem #:console
   :depends-on (#:sdl2 #:alexandria)
   :components ((:file "cpu")
-               (:file "console" :depends-on ("cpu" "cartridge" "ppu" "controller"))
+	       (:file "utils")
+               (:file "console" :depends-on ("cpu" "cartridge" "ppu" "controller" "utils"))
                (:file "mmu" :depends-on ("controller" "console"))
                (:file "ppu")
                (:file "controller")
